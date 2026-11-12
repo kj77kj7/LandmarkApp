@@ -6,7 +6,7 @@ plugins {
 
 group = 'project'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo p	roject for Spring Boot'
+description = 'Landmark - 걸음 수로 세계 랜드마크를 여행하는 앱의 백엔드'
 
 java {
 	toolchain {
@@ -51,6 +51,8 @@ dependencies {
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// 테스트는 MySQL 없이 메모리 DB(H2)로 실행
+	testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {

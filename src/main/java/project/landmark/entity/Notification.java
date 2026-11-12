@@ -20,7 +20,6 @@ public class Notification {
     @JoinColumn(name = "user_id")
     private User user; // 알림을 받는 사람
 
-    // 알림 타입
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
@@ -28,7 +27,7 @@ public class Notification {
 
     private String senderName;
 
-    // ✅ [수정] 이미지 데이터가 길 수 있으므로 LONGTEXT로 변경
+    // 이미지 데이터가 길 수 있으므로 LONGTEXT
     @Column(columnDefinition = "LONGTEXT")
     private String senderProfileImage;
 
@@ -39,5 +38,22 @@ public class Notification {
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    /**
+     * 읽지 않은 새 알림을 만듭니다.
+     *
+     * @param receiver 알림을 받을 사람
+     * @param sender   보낸 사람 (시스템 알림이면 null)
+     */
+    public static Notification of(User receiver, NotificationType type, String message, User sender) {
+        return Notification.builder()
+                .user(receiver)
+                .type(type)
+                .message(message)
+                .senderName(sender != null ? sender.getNickname() : null)
+                .senderProfileImage(sender != null ? sender.getProfileImageUrl() : null)
+                .isRead(false)
+                .build();
     }
 }

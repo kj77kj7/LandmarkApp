@@ -35,7 +35,8 @@ const AuthScreen = ({ onLoginSuccess }) => {
   // --- 비밀번호 찾기 & 재설정 상태 ---
   const [findPwData, setFindPwData] = useState({ username: '', email: '' });
   const [findPwErrors, setFindPwErrors] = useState({ username: '', email: '' }); 
-  const [resetPwData, setResetPwData] = useState({ newPassword: '', confirmNewPassword: '' });
+  // code: 이메일로 받은 6자리 인증번호 (서버가 확인해야 비밀번호가 바뀜)
+  const [resetPwData, setResetPwData] = useState({ code: '', newPassword: '', confirmNewPassword: '' });
   const [resetPwMatch, setResetPwMatch] = useState(null);
   const [resetPwError, setResetPwError] = useState(''); 
   // ✅ [추가] 비밀번호 재설정 성공 팝업 상태
@@ -279,13 +280,11 @@ const AuthScreen = ({ onLoginSuccess }) => {
             try {
                 const errorJson = JSON.parse(errorText);
                 const message = errorJson.message || "";
-                
-                if (message.includes("아이디")) {
-                    setFindPwErrors({ username: "존재하지 않는 아이디입니다.", email: "" });
-                } else if (message.includes("이메일")) {
-                    setFindPwErrors({ username: "", email: "존재하지 않는 이메일입니다." });
+
+                if (message.includes("일치하는 회원")) {
+                    setFindPwErrors({ username: "", email: "아이디와 이메일이 일치하는 회원이 없습니다." });
                 } else {
-                    Alert.alert("실패", message);
+                    Alert.alert("실패", message || "요청을 처리하지 못했습니다.");
                 }
             } catch {
                 Alert.alert("오류", "서버 오류가 발생했습니다.");
@@ -293,8 +292,12 @@ const AuthScreen = ({ onLoginSuccess }) => {
             return;
         }
 
+        // 서버가 가입된 이메일로 6자리 인증번호를 보냄 → 재설정 화면에서 입력
+        setResetPwData({ code: '', newPassword: '', confirmNewPassword: '' });
+        setResetPwError('');
+        Alert.alert("인증번호 발송", "이메일로 6자리 인증번호를 보냈습니다. 5분 안에 입력해주세요.");
         setAuthMode('resetPw');
-        
+
     } catch (e) {
         console.error(e);
         Alert.alert("오류", "서버 통신 실패");
@@ -303,6 +306,10 @@ const AuthScreen = ({ onLoginSuccess }) => {
 
   // --- [API] 비밀번호 재설정 ---
   const handleResetPassword = async () => {
+    if (!/^\d{6}$/.test(resetPwData.code)) {
+        Alert.alert("알림", "이메일로 받은 6자리 인증번호를 입력해주세요.");
+        return;
+    }
     if (!resetPwData.newPassword || !resetPwData.confirmNewPassword) {
         Alert.alert("알림", "비밀번호를 입력해주세요.");
         return;
@@ -318,6 +325,7 @@ const AuthScreen = ({ onLoginSuccess }) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: findPwData.username,
+                code: resetPwData.code,
                 newPassword: resetPwData.newPassword
             })
         });
@@ -600,9 +608,15 @@ const AuthScreen = ({ onLoginSuccess }) => {
 
       <View style={styles.formArea}>
         <Text style={styles.pageTitle}>비밀번호 재설정</Text>
-        
+
         <TextInput
-          style={styles.input} placeholder="새로운 비밀번호" secureTextEntry
+          style={styles.input} placeholder="이메일로 받은 인증번호 6자리"
+          keyboardType="number-pad" maxLength={6}
+          value={resetPwData.code} onChangeText={(text) => handleResetPwChange('code', text.replace(/[^0-9]/g, ''))}
+        />
+
+        <TextInput
+          style={styles.input} placeholder="새로운 비밀번호 (8자 이상)" secureTextEntry
           value={resetPwData.newPassword} onChangeText={(text) => handleResetPwChange('newPassword', text)}
         />
         
@@ -638,7 +652,7 @@ const AuthScreen = ({ onLoginSuccess }) => {
                 setAuthMode('login');
                 // 폼 초기화
                 setFindPwData({ username: '', email: '' });
-                setResetPwData({ newPassword: '', confirmNewPassword: '' });
+                setResetPwData({ code: '', newPassword: '', confirmNewPassword: '' });
                 setResetPwError('');
               }}
             >

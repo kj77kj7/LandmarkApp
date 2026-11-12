@@ -16,10 +16,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 아이디 찾기용
     Optional<User> findByNicknameAndEmail(String nickname, String email);
 
-    // ✅ [추가] 비밀번호 재설정 검증용 (아이디와 이메일이 일치하는지 확인)
-    Optional<User> findByUsernameAndEmail(String username, String email);
-
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    boolean existsByNickname(String nickname);
+
+    /** 아이디로 사용자를 찾고, 없으면 IllegalArgumentException을 던집니다. */
+    default User getByUsername(String username) {
+        return findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+    }
 }

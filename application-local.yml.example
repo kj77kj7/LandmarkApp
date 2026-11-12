@@ -1,0 +1,14 @@
+# 이 파일을 복사해서 같은 폴더에 application-local.yml 로 저장한 뒤 값을 채우세요.
+# application-local.yml 은 .gitignore 에 들어 있어 깃에 올라가지 않습니다.
+# (환경변수 MAIL_USERNAME, MAIL_PASSWORD, DB_USERNAME, DB_PASSWORD, JWT_SECRET 로 넣어도 됩니다.)
+
+spring:
+  mail:
+    username: your-account@gmail.com
+    password: gmail-app-password       # Google 계정 > 보안 > 앱 비밀번호에서 새로 발급
+  datasource:
+    username: root
+    password: your-mysql-password
+
+jwt:
+  secret: change-me-to-a-random-string-of-at-least-32-chars

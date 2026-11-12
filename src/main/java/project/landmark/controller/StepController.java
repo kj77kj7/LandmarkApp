@@ -17,24 +17,15 @@ public class StepController {
 
     private final StepService stepService;
 
-    // ✅ 걸음 수 동기화 API
-    // 앱에서 10초마다 이 주소로 걸음 수를 보냅니다.
+    // 걸음 수 동기화 (앱에서 주기적으로 새로 걸은 걸음 수를 보냄, 로그인 필요)
     @PostMapping("/sync")
     public ResponseEntity<ApiResponse<String>> syncSteps(
             @AuthenticationPrincipal User user,
             @RequestBody Map<String, Integer> request
     ) {
-        if (user == null) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("로그인 필요"));
-        }
-
-        Integer steps = request.get("steps");
-        if (steps == null) {
-            steps = 0;
-        }
-
+        Integer requested = request.get("steps");
+        int steps = requested != null ? requested : 0;
         stepService.addSteps(user.getUsername(), steps);
-
         return ResponseEntity.ok(ApiResponse.ok("걸음 수 저장 완료", "Added: " + steps));
     }
 }

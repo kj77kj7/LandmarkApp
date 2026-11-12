@@ -10,7 +10,6 @@ import project.landmark.repository.NotificationRepository;
 import project.landmark.repository.UserRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,42 +19,34 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
     private final LandmarkService landmarkService;
-
-    // 알림 저장을 위해 Repository 주입
     private final NotificationRepository notificationRepository;
 
-    // 친구 목록 조회
+    // 친구 목록 (ACCEPTED 상태만)
     @Transactional(readOnly = true)
     public List<FriendDto> getMyFriends(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+        User user = userRepository.getByUsername(username);
 
-        // ACCEPTED 상태인 친구만 조회
         return friendRepository.findByUser(user).stream()
                 .filter(f -> f.getStatus() == FriendStatus.ACCEPTED)
                 .map(f -> {
                     User friendUser = f.getFriend();
-                    String currentLandmark = landmarkService.getCurrentLandmarkName(friendUser);
-
                     return FriendDto.builder()
                             .id(f.getId())
                             .friendNickname(friendUser.getNickname())
                             .status(f.getStatus().name())
-                            .currentLandmark(currentLandmark)
+                            .currentLandmark(landmarkService.getCurrentLandmarkName(friendUser))
                             .totalSteps(friendUser.getTotalSteps())
                             .profileImageUrl(friendUser.getProfileImageUrl())
                             .representativeTitle(friendUser.getRepresentativeTitle())
                             .statusMessage(friendUser.getStatusMessage())
                             .build();
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    // 친구 요청 보내기
+    // 친구 요청 보내기: 상대에게 '친구 요청' 알림만 만들고, 수락하면 addFriend가 호출됩니다.
     public void requestFriend(String myUsername, String friendNickname) {
-        User me = userRepository.findByUsername(myUsername)
-                .orElseThrow(() -> new IllegalArgumentException("내 정보 없음"));
-
+        User me = userRepository.getByUsername(myUsername);
         User friendUser = userRepository.findByNickname(friendNickname)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
@@ -66,77 +57,44 @@ public class FriendService {
         boolean isAlreadyFriend = friendRepository.findByUserAndFriend(me, friendUser)
                 .map(f -> f.getStatus() == FriendStatus.ACCEPTED)
                 .orElse(false);
-
         if (isAlreadyFriend) {
             throw new IllegalArgumentException("이미 친구입니다.");
         }
 
-        // 상대방에게 '친구 요청' 알림 생성
-        Notification noti = Notification.builder()
-                .user(friendUser)
-                .type(NotificationType.FRIEND_REQUEST)
-                .message(me.getNickname() + "님이 친구 요청을 보냈습니다.")
-                .senderName(me.getNickname())
-                .senderProfileImage(me.getProfileImageUrl())
-                .isRead(false)
-                .build();
-
-        notificationRepository.save(noti);
+        notificationRepository.save(Notification.of(friendUser, NotificationType.FRIEND_REQUEST,
+                me.getNickname() + "님이 친구 요청을 보냈습니다.", me));
     }
 
-    // ✅ [수정] 친구 수락 (양방향 저장 + 수락 알림 발송)
+    // 친구 수락: 양방향으로 저장하고 요청자에게 수락 알림
     public void addFriend(String myUsername, String friendNickname) {
-        User me = userRepository.findByUsername(myUsername)
-                .orElseThrow(() -> new IllegalArgumentException("내 정보 없음"));
-
+        User me = userRepository.getByUsername(myUsername);
         User friendUser = userRepository.findByNickname(friendNickname)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 닉네임입니다."));
 
-        // 1. 나 -> 친구 (수락 상태로 저장/업데이트)
-        Friend friendship1 = friendRepository.findByUserAndFriend(me, friendUser)
-                .orElse(Friend.builder().user(me).friend(friendUser).build());
-        friendship1.setStatus(FriendStatus.ACCEPTED);
-        friendRepository.save(friendship1);
+        saveAccepted(me, friendUser);
+        saveAccepted(friendUser, me);
 
-        // 2. 친구 -> 나 (수락 상태로 저장/업데이트)
-        Friend friendship2 = friendRepository.findByUserAndFriend(friendUser, me)
-                .orElse(Friend.builder().user(friendUser).friend(me).build());
-        friendship2.setStatus(FriendStatus.ACCEPTED);
-        friendRepository.save(friendship2);
-
-        // ✅ [추가] 요청자(friendUser)에게 '수락 완료' 알림 보내기
-        Notification acceptNoti = Notification.builder()
-                .user(friendUser) // 알림 받을 사람 (요청했던 사람)
-                .type(NotificationType.FRIEND_ACCEPT) // 수락 알림 타입
-                .message(me.getNickname() + "님이 친구 요청을 수락하셨습니다!")
-                .senderName(me.getNickname()) // 수락한 사람(나)의 이름
-                .senderProfileImage(me.getProfileImageUrl()) // 수락한 사람(나)의 프사
-                .isRead(false)
-                .build();
-
-        notificationRepository.save(acceptNoti);
+        notificationRepository.save(Notification.of(friendUser, NotificationType.FRIEND_ACCEPT,
+                me.getNickname() + "님이 친구 요청을 수락하셨습니다!", me));
     }
 
-    // 친구 삭제
+    // 친구 삭제: 양쪽 관계를 지우고 상대에게 알림
     public void deleteFriend(String myUsername, String friendNickname) {
-        User me = userRepository.findByUsername(myUsername)
-                .orElseThrow(() -> new IllegalArgumentException("내 정보 없음"));
+        User me = userRepository.getByUsername(myUsername);
         User friendUser = userRepository.findByNickname(friendNickname)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 친구입니다."));
 
-        // 양쪽 관계를 모두 삭제
         friendRepository.findByUserAndFriend(me, friendUser).ifPresent(friendRepository::delete);
         friendRepository.findByUserAndFriend(friendUser, me).ifPresent(friendRepository::delete);
 
-        // ✅ [추가] 삭제된 친구에게 절교 알림 발송
-        Notification rejectNoti = Notification.builder()
-                .user(friendUser) // 알림 받을 사람 (삭제된 친구)
-                .type(NotificationType.FRIEND_REJECT) // 거절/절교 타입 사용
-                .message(me.getNickname() + "님과 절교하셨습니다.") // 요청하신 문구
-                .senderName(me.getNickname())
-                .senderProfileImage(me.getProfileImageUrl())
-                .isRead(false)
-                .build();
-        notificationRepository.save(rejectNoti);
+        notificationRepository.save(Notification.of(friendUser, NotificationType.FRIEND_REJECT,
+                me.getNickname() + "님과 절교하셨습니다.", me));
+    }
+
+    private void saveAccepted(User user, User friend) {
+        Friend friendship = friendRepository.findByUserAndFriend(user, friend)
+                .orElse(Friend.builder().user(user).friend(friend).build());
+        friendship.setStatus(FriendStatus.ACCEPTED);
+        friendRepository.save(friendship);
     }
 }

@@ -10,14 +10,19 @@ import project.landmark.dto.UserResponse;
 import project.landmark.entity.User;
 import project.landmark.repository.UserRepository;
 import project.landmark.security.JwtTokenProvider;
+import project.landmark.security.VerificationCodeStore;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String RESET_KEY_PREFIX = "reset-password:";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
+    private final VerificationCodeStore codeStore;
 
     // 회원가입
     @Transactional
@@ -28,29 +33,19 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
+        if (userRepository.existsByNickname(request.getNickname())) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
 
-        String encoded = passwordEncoder.encode(request.getPassword());
-
-        User user = User.builder()
+        User saved = userRepository.save(User.builder()
                 .username(request.getUsername())
-                .password(encoded)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .nickname(request.getNickname())
                 .totalSteps(0L)
-                .representativeTitle(null)
-                .build();
+                .build());
 
-        User saved = userRepository.save(user);
-
-        return UserResponse.builder()
-                .id(saved.getId())
-                .username(saved.getUsername())
-                .email(saved.getEmail())
-                .nickname(saved.getNickname())
-                .totalSteps(saved.getTotalSteps())
-                .representativeTitle(saved.getRepresentativeTitle())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        return UserResponse.from(saved);
     }
 
     // 로그인
@@ -74,7 +69,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public boolean isNicknameAvailable(String nickname) {
-        return userRepository.findByNickname(nickname).isEmpty();
+        return !userRepository.existsByNickname(nickname);
     }
 
     @Transactional(readOnly = true)
@@ -82,37 +77,27 @@ public class AuthService {
         return !userRepository.existsByEmail(email);
     }
 
-    // 아이디 찾기
+    // 비밀번호 재설정 1단계: 아이디와 이메일이 맞으면 그 이메일로 인증번호 발송
     @Transactional(readOnly = true)
-    public String findUsername(String nickname, String email) {
-        User user = userRepository.findByNicknameAndEmail(nickname, email)
-                .orElseThrow(() -> new IllegalArgumentException("일치하는 사용자 정보를 찾을 수 없습니다."));
-        return user.getUsername();
-    }
-
-    // 비밀번호 재설정 정보 검증
-    @Transactional(readOnly = true)
-    public void validateForResetPassword(String username, String email) {
+    public void sendResetCode(String username, String email) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
+                .filter(u -> u.getEmail().equalsIgnoreCase(email))
+                .orElseThrow(() -> new IllegalArgumentException("아이디와 이메일이 일치하는 회원이 없습니다."));
 
-        if (!user.getEmail().equals(email)) {
-            throw new IllegalArgumentException("존재하지 않는 이메일입니다.");
-        }
+        String code = codeStore.issue(RESET_KEY_PREFIX + username);
+        emailService.sendEmail(user.getEmail(), "[Landmark] 비밀번호 재설정 인증번호",
+                user.getNickname() + "님, 비밀번호 재설정 인증번호는 [" + code + "] 입니다. 5분 안에 입력해 주세요.");
     }
 
-    // ✅ [수정] 비밀번호 재설정 (기존 비밀번호 확인 로직 추가)
+    // 비밀번호 재설정 2단계: 인증번호가 맞을 때만 변경
     @Transactional
-    public void resetPassword(String username, String newPassword) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
+    public void resetPassword(String username, String code, String newPassword) {
+        codeStore.verify(RESET_KEY_PREFIX + username, code);
 
-        // 기존 비밀번호와 일치하는지 확인
+        User user = userRepository.getByUsername(username);
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 이전과 일치합니다.");
+            throw new IllegalArgumentException("이전과 같은 비밀번호는 사용할 수 없습니다.");
         }
-
         user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
     }
 }

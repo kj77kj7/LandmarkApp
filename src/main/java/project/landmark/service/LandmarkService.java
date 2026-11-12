@@ -3,7 +3,7 @@ package project.landmark.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import project.landmark.dto.LandmarkProgressDto;
+import project.landmark.dto.LandmarkPosition;
 import project.landmark.entity.*;
 import project.landmark.repository.LandmarkRepository;
 import project.landmark.repository.NotificationRepository;
@@ -11,7 +11,6 @@ import project.landmark.repository.UserLandmarkRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,106 +19,46 @@ public class LandmarkService {
 
     private final LandmarkRepository landmarkRepository;
     private final UserLandmarkRepository userLandmarkRepository;
-    // ✅ 알림 저장을 위해 추가
     private final NotificationRepository notificationRepository;
 
+    /** 걸음 수 오름차순으로 정렬된 전체 랜드마크 */
     @Transactional(readOnly = true)
-    public List<Landmark> findAll() {
-        return landmarkRepository.findAll();
+    public List<Landmark> findAllSorted() {
+        return landmarkRepository.findAllByOrderByRequiredStepsAsc();
     }
 
+    /** 사용자의 현재 위치와 다음 목표 랜드마크 */
     @Transactional(readOnly = true)
-    public Landmark findById(Long id) {
-        return landmarkRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 랜드마크 ID입니다: " + id));
+    public LandmarkPosition getPosition(User user) {
+        return LandmarkPosition.of(findAllSorted(), stepsOf(user));
     }
 
-    // 유저의 현재 랜드마크 이름을 계산해서 반환하는 메서드
+    /** 사용자가 지금 있는 랜드마크 이름 */
+    @Transactional(readOnly = true)
     public String getCurrentLandmarkName(User user) {
-        List<Landmark> allLandmarks = landmarkRepository.findAllByOrderByRequiredStepsAsc();
-
-        String currentName = "시작점";
-        long userSteps = user.getTotalSteps() != null ? user.getTotalSteps() : 0L;
-
-        if (!allLandmarks.isEmpty()) {
-            if (allLandmarks.get(0).getRequiredSteps() == 0) {
-                currentName = allLandmarks.get(0).getName();
-            } else {
-                currentName = allLandmarks.get(0).getName() + " 입구";
-            }
-        }
-
-        for (Landmark lm : allLandmarks) {
-            if (userSteps >= lm.getRequiredSteps()) {
-                currentName = lm.getName();
-            } else {
-                break;
-            }
-        }
-        return currentName;
+        return getPosition(user).currentName();
     }
 
-    // ✅ [추가] 랜드마크 해금 체크 및 알림 발송 (StepService에서 호출)
+    /** 새로 도달한 랜드마크를 해금 기록하고 알림을 보냅니다. (걸음 수 저장 시 호출) */
     public void checkAndUnlockLandmarks(User user) {
-        long currentSteps = user.getTotalSteps() != null ? user.getTotalSteps() : 0L;
-        List<Landmark> allLandmarks = landmarkRepository.findAll();
+        long currentSteps = stepsOf(user);
 
-        for (Landmark lm : allLandmarks) {
-            // 걸음 수 조건 만족 시
-            if (currentSteps >= lm.getRequiredSteps()) {
-                // 아직 해금 기록이 없다면
-                if (!userLandmarkRepository.existsByUserAndLandmark(user, lm)) {
-                    // 1. 해금 기록 저장
-                    UserLandmark unlocked = UserLandmark.builder()
-                            .user(user)
-                            .landmark(lm)
-                            .unlockedAt(LocalDateTime.now())
-                            .build();
-                    userLandmarkRepository.save(unlocked);
-
-                    // 2. 알림 생성 및 저장
-                    Notification noti = Notification.builder()
-                            .user(user)
-                            .type(NotificationType.LANDMARK) // 새로 추가한 타입
-                            .message(lm.getName() + " 랜드마크가 해금되었습니다!")
-                            .isRead(false)
-                            .build();
-                    notificationRepository.save(noti);
-                }
+        for (Landmark lm : landmarkRepository.findAll()) {
+            long required = lm.getRequiredSteps() != null ? lm.getRequiredSteps() : 0L;
+            if (currentSteps < required || userLandmarkRepository.existsByUserAndLandmark(user, lm)) {
+                continue;
             }
+            userLandmarkRepository.save(UserLandmark.builder()
+                    .user(user)
+                    .landmark(lm)
+                    .unlockedAt(LocalDateTime.now())
+                    .build());
+            notificationRepository.save(Notification.of(user, NotificationType.LANDMARK,
+                    lm.getName() + " 랜드마크가 해금되었습니다!", null));
         }
     }
 
-    public List<LandmarkProgressDto> getLandmarksForUser(User user) {
-        long userSteps = user.getTotalSteps() != null ? user.getTotalSteps() : 0L;
-        List<Landmark> landmarks = landmarkRepository.findAll();
-
-        return landmarks.stream()
-                .map(landmark -> {
-                    boolean isRecorded = userLandmarkRepository.existsByUserAndLandmark(user, landmark);
-                    Long requiredSteps = landmark.getRequiredSteps();
-                    if (requiredSteps == null) requiredSteps = 0L;
-
-                    boolean unlocked = isRecorded || (userSteps >= requiredSteps) || (requiredSteps == 0);
-
-                    int progressPercent;
-                    if (requiredSteps == 0) {
-                        progressPercent = 100;
-                    } else {
-                        progressPercent = (int) Math.round((double) userSteps * 100 / requiredSteps);
-                        if (progressPercent > 100) progressPercent = 100;
-                    }
-
-                    return LandmarkProgressDto.builder()
-                            .id(landmark.getId())
-                            .name(landmark.getName())
-                            .imageUrl(landmark.getImageUrl())
-                            .requiredSteps(requiredSteps)
-                            .currentSteps(userSteps)
-                            .progressPercent(progressPercent)
-                            .unlocked(unlocked)
-                            .build();
-                })
-                .collect(Collectors.toList());
+    public static long stepsOf(User user) {
+        return user.getTotalSteps() != null ? user.getTotalSteps() : 0L;
     }
 }

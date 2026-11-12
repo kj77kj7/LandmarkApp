@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import project.landmark.dto.ApiResponse;
 import project.landmark.dto.UserResponse;
 import project.landmark.entity.User;
-import project.landmark.service.LandmarkService; // 👈 추가
+import project.landmark.service.LandmarkService;
 import project.landmark.service.UserService;
 
 import java.util.List;
@@ -19,26 +19,16 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
-    private final LandmarkService landmarkService; // 👈 추가 (의존성 주입)
+    private final LandmarkService landmarkService;
 
-    // ✅ 내 정보 조회 (수정됨)
+    // 내 정보 (로그인 필요)
     @GetMapping("/info")
     public ResponseEntity<ApiResponse<UserResponse>> getUserInfo(@AuthenticationPrincipal User user) {
-        if (user == null) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("인증되지 않은 사용자입니다."));
-        }
-
-        // 1. 기본 정보 변환
         UserResponse response = UserResponse.from(user);
-
-        // 2. 🚨 [추가] 현재 랜드마크 이름 계산해서 넣기
-        String currentLandmark = landmarkService.getCurrentLandmarkName(user);
-        response.setCurrentLandmark(currentLandmark);
-
+        response.setCurrentLandmark(landmarkService.getCurrentLandmarkName(user));
         return ResponseEntity.ok(ApiResponse.ok("유저 정보 조회 성공", response));
     }
 
-    // ... (나머지 메서드들은 기존 코드 그대로 유지) ...
     @GetMapping("/titles")
     public ResponseEntity<ApiResponse<List<String>>> getMyTitles(@AuthenticationPrincipal User user) {
         List<String> titles = userService.getAvailableTitles(user.getUsername());

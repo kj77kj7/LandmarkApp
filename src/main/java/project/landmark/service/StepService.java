@@ -17,40 +17,27 @@ public class StepService {
 
     private final StepRecordRepository stepRecordRepository;
     private final UserRepository userRepository;
-    private final AchievementService achievementService; // 업적 체크용
-    private final LandmarkService landmarkService;       // ✅ 랜드마크 체크용 추가
+    private final LandmarkService landmarkService;
 
     public void addSteps(String username, int newSteps) {
         if (newSteps <= 0) return; // 0보 이하는 무시
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.getByUsername(username);
 
-        // 1. 유저 총 걸음 수 증가
+        // 1. 누적 걸음 수 + 레벨 갱신 (한 번만 더함)
         user.addSteps((long) newSteps);
 
-        long currentTotal = (user.getTotalSteps() == null) ? 0L : user.getTotalSteps();
-        user.setTotalSteps(currentTotal + newSteps);
-
-        // 2. 오늘 날짜 StepRecord 갱신
+        // 2. 오늘 날짜 기록 갱신
         LocalDate today = LocalDate.now();
         StepRecord record = stepRecordRepository.findByUserAndDate(user, today)
-                .orElseGet(() -> {
-                    StepRecord newRecord = StepRecord.builder()
-                            .user(user)
-                            .date(today)
-                            .steps(0L)
-                            .build();
-                    return stepRecordRepository.save(newRecord);
-                });
-
+                .orElseGet(() -> stepRecordRepository.save(StepRecord.builder()
+                        .user(user)
+                        .date(today)
+                        .steps(0L)
+                        .build()));
         record.setSteps(record.getSteps() + newSteps);
-        stepRecordRepository.save(record);
 
-        // 3. 업적 달성 체크 (알림 발송 포함)
-        achievementService.unlockAchievements(username, user.getTotalSteps().intValue());
-
-        // 4. ✅ 랜드마크 해금 체크 (알림 발송 포함)
+        // 3. 새로 도달한 랜드마크 해금 + 알림
         landmarkService.checkAndUnlockLandmarks(user);
     }
 }

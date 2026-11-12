@@ -13,18 +13,13 @@ import java.util.Optional;
 @Repository
 public interface FriendRepository extends JpaRepository<Friend, Long> {
 
-    // ✅ [복구] RankingService에서 사용하는 메서드 (User 리스트 반환)
+    // 친구 랭킹용: 내 친구 User 목록
     @Query("SELECT f.friend FROM Friend f WHERE f.user = :user")
     List<User> findFriendsByUser(@Param("user") User user);
 
-    // ---------------------------------------------------------
-
-    // 내 친구 목록 조회 (Friend 엔티티 반환)
+    // 내 친구 관계 목록
     List<Friend> findByUser(User user);
 
-    // 이미 친구인지 확인 (중복 추가 방지)
-    boolean existsByUserAndFriend(User user, User friend);
-
-    // 친구 관계 찾기 (삭제용)
+    // 특정 친구 관계 찾기
     Optional<Friend> findByUserAndFriend(User user, User friend);
 }

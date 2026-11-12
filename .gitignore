@@ -19,6 +19,26 @@
 *.tar.gz
 *.rar
 
+# Gradle wrapper jar는 저장소에 있어야 ./gradlew가 동작함
+!gradle/wrapper/gradle-wrapper.jar
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Gradle / 빌드 결과물
+.gradle/
+build/
+out/
+bin/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# 로컬 비밀 설정 (application-local.yml.example 참고)
+application-local.yml
+.env

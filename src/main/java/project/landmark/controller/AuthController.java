@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import project.landmark.dto.*;
 import project.landmark.service.AuthService;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -51,27 +49,19 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(msg, isAvailable));
     }
 
-    @GetMapping("/find-id")
-    public ResponseEntity<ApiResponse<String>> findId(@RequestParam String nickname, @RequestParam String email) {
-        String foundUsername = authService.findUsername(nickname, email);
-        return ResponseEntity.ok(ApiResponse.ok("아이디 찾기 성공", foundUsername));
-    }
+    // 아이디 찾기는 이메일 인증(/api/email-auth/send → /api/email-auth/verify)으로만 할 수 있습니다.
 
-    // ✅ [추가] 비밀번호 재설정 정보 확인
+    // 비밀번호 재설정 1단계: 아이디+이메일 확인 후 이메일로 인증번호 발송
     @PostMapping("/check-reset-info")
-    public ResponseEntity<ApiResponse<Void>> checkResetInfo(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String email = request.get("email");
-        authService.validateForResetPassword(username, email);
-        return ResponseEntity.ok(ApiResponse.ok("정보 확인 성공", null));
+    public ResponseEntity<ApiResponse<Void>> checkResetInfo(@Valid @RequestBody ResetCodeRequest request) {
+        authService.sendResetCode(request.getUsername(), request.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("인증번호를 이메일로 보냈습니다.", null));
     }
 
-    // ✅ [추가] 비밀번호 재설정 실행
+    // 비밀번호 재설정 2단계: 인증번호 + 새 비밀번호
     @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String newPassword = request.get("newPassword");
-        authService.resetPassword(username, newPassword);
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getUsername(), request.getCode(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.ok("비밀번호 재설정 성공", null));
     }
 }

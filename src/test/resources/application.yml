@@ -1,0 +1,26 @@
+# 테스트 전용 설정: main의 application.yml 대신 이 파일이 쓰입니다.
+# MySQL·Gmail 없이 메모리 DB(H2, MySQL 호환 모드)로 실행합니다.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:landmark;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: always
+
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: create-drop
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+  mail:
+    host: localhost
+    port: 2525
+
+jwt:
+  secret: test-only-secret-key-at-least-32-bytes-long

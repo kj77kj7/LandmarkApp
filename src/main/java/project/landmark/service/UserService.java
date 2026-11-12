@@ -10,7 +10,6 @@ import project.landmark.repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,33 +19,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final LandmarkRepository landmarkRepository;
 
-    public User registerUser(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-        return userRepository.save(user);
-    }
-
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
-    }
-
-    public Optional<User> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-
+    // 도달한 랜드마크의 보상 칭호 목록
     @Transactional(readOnly = true)
     public List<String> getAvailableTitles(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
-
-        long mySteps = user.getTotalSteps() != null ? user.getTotalSteps() : 0L;
-        List<Landmark> allLandmarks = landmarkRepository.findAll();
+        User user = userRepository.getByUsername(username);
+        long mySteps = LandmarkService.stepsOf(user);
 
         List<String> titles = new ArrayList<>();
-
-        for (Landmark lm : allLandmarks) {
-            if (mySteps >= lm.getRequiredSteps() && lm.getRewardTitle() != null) {
+        for (Landmark lm : landmarkRepository.findAllByOrderByRequiredStepsAsc()) {
+            long required = lm.getRequiredSteps() != null ? lm.getRequiredSteps() : 0L;
+            if (mySteps >= required && lm.getRewardTitle() != null) {
                 titles.add(lm.getRewardTitle());
             }
         }
@@ -54,42 +36,28 @@ public class UserService {
     }
 
     public void updateRepresentativeTitle(String username, String newTitle) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+        User user = userRepository.getByUsername(username);
 
-        List<String> ownedTitles = getAvailableTitles(username);
-        if (newTitle != null && !ownedTitles.contains(newTitle)) {
+        if (newTitle != null && !getAvailableTitles(username).contains(newTitle)) {
             throw new IllegalArgumentException("획득하지 못한 칭호입니다.");
         }
-
         user.setRepresentativeTitle(newTitle);
     }
 
-    // 닉네임 변경
     public void updateNickname(String username, String newNickname) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+        User user = userRepository.getByUsername(username);
 
-        if (userRepository.findByNickname(newNickname).isPresent()) {
+        if (userRepository.existsByNickname(newNickname)) {
             throw new IllegalArgumentException("이미 존재하는 닉네임입니다.");
         }
-
         user.setNickname(newNickname);
     }
 
-    // 프로필 이미지 변경
     public void updateProfileImage(String username, String imageUrl) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
-
-        user.setProfileImageUrl(imageUrl);
+        userRepository.getByUsername(username).setProfileImageUrl(imageUrl);
     }
 
-    // 🚨 [추가] 상태 메시지 변경
     public void updateStatusMessage(String username, String newMessage) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
-
-        user.setStatusMessage(newMessage);
+        userRepository.getByUsername(username).setStatusMessage(newMessage);
     }
 }

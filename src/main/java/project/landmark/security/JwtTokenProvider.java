@@ -1,22 +1,36 @@
 package project.landmark.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import java.util.Date;
+
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
 
-    // ✅ 토큰 서명용 비밀키 (실제 서비스에서는 환경변수나 yml로 분리)
-    private final Key key = Keys.hmacShaKeyFor("my-super-secret-key-for-jwt-signing-2025".getBytes());
-    private final long validityInMs = 1000L * 60 * 60; // 1시간 유효
+    private static final long VALIDITY_MS = 1000L * 60 * 60; // 1시간
 
-    // ✅ 토큰 생성
+    private final Key key;
+
+    // 서명 키는 설정(jwt.secret / 환경변수 JWT_SECRET)에서 읽습니다.
+    public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
+        byte[] bytes = secret == null ? new byte[0] : secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < 32) {
+            throw new IllegalStateException(
+                    "jwt.secret(JWT_SECRET)이 비어 있거나 32바이트보다 짧습니다. application-local.yml을 확인하세요.");
+        }
+        this.key = Keys.hmacShaKeyFor(bytes);
+    }
+
     public String createToken(Long userId, String username) {
         Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMs);
+        Date validity = new Date(now.getTime() + VALIDITY_MS);
 
         return Jwts.builder()
                 .setSubject(username)
@@ -27,7 +41,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // ✅ 토큰 검증
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
@@ -37,7 +50,6 @@ public class JwtTokenProvider {
         }
     }
 
-    // ✅ 토큰에서 username 추출
     public String getUsername(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build()
                 .parseClaimsJws(token)

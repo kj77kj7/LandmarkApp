@@ -1,50 +1,61 @@
-  server:
-    port: 8080
-    servlet:
-      encoding:
-        charset: UTF-8
-        force: true
+# 비밀번호·키 같은 민감한 값은 이 파일에 적지 않습니다.
+# 프로젝트 루트의 application-local.yml(깃에 올라가지 않음) 또는 환경변수로 넣어 주세요.
+# 형식은 application-local.yml.example 참고.
 
-  spring:
-    application:          # [수정] aplication -> application (오타 수정)
-      name: landmark
-    mail:
-      host: smtp.gmail.com
-      port: 587
-      username: "kj77kj7@gmail.com"
-      password: "ttpybofbqujsijvh"
-      properties:
-        mail:
-          smtp:
-            auth: true
-            starttls:
-              enable: true
-    devtools:
-      livereload:
-        enabled: true     # [수정] endabled -> enabled (오타 수정)
-      restart:
-        enabled: true     # [수정] endabled -> enabled (오타 수정)
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
 
-    datasource:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/landmark?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false
-      username: root
-      password: "1234"
-      #컴퓨터 121212 노트북 1234
+spring:
+  application:
+    name: landmark
+  config:
+    import:
+      - optional:classpath:application-local.yml
+      - optional:file:./application-local.yml
 
-    sql:
-      init:
-        mode: always      # [추가] data.sql 파일을 항상 실행하겠다는 설정
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
-    jpa:
-      open-in-view: true
-      defer-datasource-initialization: true # [핵심] 테이블(DDL)을 먼저 만들고 나서 data.sql을 실행하라는 설정
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: true
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/landmark?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+  sql:
+    init:
+      mode: always          # data.sql(랜드마크 기본 데이터) 실행
+
+  jpa:
+    open-in-view: true
+    defer-datasource-initialization: true   # 테이블 생성 후 data.sql 실행
+    hibernate:
+      ddl-auto: update      # create는 재시작마다 모든 데이터를 지움
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    show-sql: true
+    properties:
       hibernate:
-        ddl-auto: create
-        naming:
-          physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
+        format_sql: true
 
+jwt:
+  secret: ${JWT_SECRET:}    # 32바이트(영문 32자) 이상
