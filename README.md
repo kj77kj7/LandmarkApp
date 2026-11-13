@@ -25,21 +25,13 @@
 
 ```mermaid
 flowchart TB
-    subgraph App["모바일 앱 (frontend/)"]
-        direction LR
-        S[가속도 센서] --> A[App.js<br/>걸음 집계]
-        A --> Screens[화면 9개]
-    end
-    subgraph API["백엔드 (backend/)"]
-        direction LR
-        F[JwtAuthFilter] --> C[Controller]
-        C --> Svc[Service]
-        Svc --> R[Repository]
-    end
-    A -- "POST /api/steps/sync (10초마다)" --> F
-    Screens -- "REST + Bearer 토큰" --> F
-    R --> DB[(MySQL)]
-    Svc -- 인증번호 메일 --> M[Gmail SMTP]
+    App["<b>모바일 앱</b> · frontend/<br/>가속도 센서 → 걸음 집계 → 화면 9개"]
+    API["<b>Spring Boot API</b> · backend/<br/>JwtAuthFilter → Controller → Service → Repository"]
+    DB[(MySQL)]
+    Mail[Gmail SMTP]
+    App -- "REST + JWT · 걸음은 10초마다 동기화" --> API
+    API --> DB
+    API -- "인증번호 메일" --> Mail
 ```
 
 ```
