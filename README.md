@@ -24,12 +24,14 @@
 ## 구조
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph App["모바일 앱 (frontend/)"]
+        direction LR
         S[가속도 센서] --> A[App.js<br/>걸음 집계]
         A --> Screens[화면 9개]
     end
     subgraph API["백엔드 (backend/)"]
+        direction LR
         F[JwtAuthFilter] --> C[Controller]
         C --> Svc[Service]
         Svc --> R[Repository]
