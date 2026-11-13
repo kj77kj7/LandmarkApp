@@ -29,12 +29,8 @@ export default function App() {
   const lastUpdateRef = useRef(0); 
 
   useEffect(() => {
-    // 🚨 [수정] 자동 로그인 기능을 끄기 위해 checkLogin()을 주석 처리했습니다.
-    // 다시 자동 로그인을 원하시면 주석을 해제하세요.
-    // checkLogin(); 
-    
-    // 테스트를 위해 앱 시작 시 강제로 로그아웃(토큰 삭제) 하려면 아래 주석을 해제하세요.
-    // deleteItem('userToken');
+    // 저장된 토큰이 있으면 자동 로그인 (만료된 토큰은 홈 화면에서 401을 받으면 로그아웃)
+    checkLogin();
 
     return () => {
       if (Platform.OS !== 'web') {
@@ -52,7 +48,7 @@ export default function App() {
       } else {
         setSensorStatus('로그인 필요');
       }
-    } catch (e) { console.log(e); }
+    } catch (e) { console.error(e); }
   };
 
   const handleLoginSuccess = async (jwtToken) => {

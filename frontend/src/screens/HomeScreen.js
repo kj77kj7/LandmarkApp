@@ -18,12 +18,11 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
   const [todayDate, setTodayDate] = useState("");
   const [nickname, setNickname] = useState("");
   const [serverTotalSteps, setServerTotalSteps] = useState(0);
-  const [representativeTitle, setRepresentativeTitle] = useState("");
   const [myRank, setMyRank] = useState(0);
   const [targetLandmark, setTargetLandmark] = useState("");
   const [goalSteps, setGoalSteps] = useState(0);
   const [currentLocation, setCurrentLocation] = useState("");
-  // ✅ [추가] 프로필 이미지 상태
+  // 프로필 이미지 상태
   const [profileImageUrl, setProfileImageUrl] = useState(null);
 
   // 알림 관련 State
@@ -74,7 +73,7 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
       }
       const homeJson = await homeRes.json();
 
-      // 2. ✅ [추가] 내 정보 조회 (프로필 이미지 가져오기 위함)
+      // 내 정보 조회 (프로필 이미지 가져오기 위함)
       // 홈 데이터 API에 프로필 이미지가 없다면 별도 호출 필요
       const userRes = await fetch(`${API_URL}/api/user/info`, { headers });
       const userJson = await userRes.json();
@@ -83,7 +82,6 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
         const homeData = homeJson.data;
         setNickname(homeData.userInfo.nickname);
         setServerTotalSteps(homeData.userInfo.totalSteps);
-        setRepresentativeTitle(homeData.userInfo.representativeTitle);
         setMyRank(homeData.rankingInfo.rank);
         setTargetLandmark(homeData.landmarkInfo.name);
         setGoalSteps(homeData.landmarkInfo.requiredSteps);
@@ -91,7 +89,7 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
       }
 
       if (userJson.success) {
-        // ✅ 프로필 이미지 설정
+        // 프로필 이미지 설정
         setProfileImageUrl(userJson.data.profileImageUrl);
       }
 
@@ -119,7 +117,7 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
     } catch (e) { console.error("알림 개수 로드 실패", e); }
   };
 
-  // === 테스트용 걸음 추가 ===
+  // === 개발용: 걸음 수 25,000보 추가 (개발 빌드에서만 버튼 표시) ===
   const addTestSteps = async () => {
     try {
       const token = await getItem('userToken');
@@ -129,8 +127,8 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
         body: JSON.stringify({ steps: 25000 }) 
       });
       
-      if(Platform.OS === 'web') alert("테스트: 500보 추가됨!");
-      else Alert.alert("테스트", "500보가 추가되었습니다!");
+      if(Platform.OS === 'web') alert("개발용: 25,000보 추가됨");
+      else Alert.alert("개발용", "25,000보가 추가되었습니다.");
       
       fetchHomeData(); 
     } catch (e) { console.error(e); }
@@ -379,7 +377,7 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
              </TouchableOpacity>
 
              <View style={styles.penguinImageContainer}>
-                {/* 🚨 [수정] 프로필 이미지가 있으면 그것을, 없으면 기본 아이콘 사용 */}
+                {/* 프로필 이미지가 있으면 그것을, 없으면 기본 아이콘 사용 */}
                 <Image 
                     source={profileImageUrl ? { uri: profileImageUrl } : require('../../assets/images/HomeIcon.png')} 
                     style={styles.penguinImage} 
@@ -388,13 +386,15 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
           </View>
         </View>
 
-        {/* 테스트용 버튼 */}
-        <TouchableOpacity 
-            style={{backgroundColor: '#FFEB3B', padding: 12, borderRadius: 10, marginBottom: 20, alignItems:'center', borderWidth:1, borderColor:'#FBC02D'}}
-            onPress={addTestSteps}
-        >
-            <Text style={{fontWeight: 'bold', color: '#333'}}>🚧 TEST: 걸음 수 500보 추가하기</Text>
-        </TouchableOpacity>
+        {/* 개발용 버튼: 배포 빌드(__DEV__ = false)에서는 보이지 않음 */}
+        {__DEV__ && (
+          <TouchableOpacity
+              style={{backgroundColor: '#FFEB3B', padding: 12, borderRadius: 10, marginBottom: 20, alignItems:'center', borderWidth:1, borderColor:'#FBC02D'}}
+              onPress={addTestSteps}
+          >
+              <Text style={{fontWeight: 'bold', color: '#333'}}>개발용: 걸음 수 25,000보 추가</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.menuCard}>
           <MenuItem 
@@ -406,7 +406,7 @@ export default function HomeScreen({ navigation, stepCount, onLogout }) {
             onClick={() => navigation.navigate('Ranking')} 
           />
           
-          {/* ✅ [수정] 업적 버튼 연결 */}
+          {/* 업적 버튼 연결 */}
           <MenuItem 
             title="업적" desc="" iconPlaceholder="🏆"
             onClick={() => navigation.navigate('Achievement')} 

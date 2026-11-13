@@ -16,7 +16,7 @@ export default function FriendListScreen() {
   const [friendList, setFriendList] = useState([]);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [searchNickname, setSearchNickname] = useState("");
-  // ✅ 에러 메시지 상태
+  // 에러 메시지 상태
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function FriendListScreen() {
       setErrorMessage("");
   };
 
-  // ✅ [수정] 친구 추가 요청 로직 (웹/앱 분기 처리)
+  // 친구 추가 요청 로직 (웹/앱 분기 처리)
   const handleAddFriend = async () => {
     if (!searchNickname.trim()) { 
         setErrorMessage("닉네임을 입력해주세요."); 
@@ -141,7 +141,7 @@ export default function FriendListScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { 
         const msg = '사진첩 접근 권한이 필요합니다.';
-        Platform.OS === 'web' ? window.alert(msg) : Alert.alert('권한 부족', msg);
+        if (Platform.OS === 'web') window.alert(msg); else Alert.alert('권한 부족', msg);
         return; 
     }
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -165,10 +165,10 @@ export default function FriendListScreen() {
         if (json.success) {
             setMyInfo({ ...myInfo, profileImageUrl: base64Img });
             const msg = "프로필 사진이 변경되었습니다!";
-            Platform.OS === 'web' ? window.alert(msg) : Alert.alert("성공", msg);
+            if (Platform.OS === 'web') window.alert(msg); else Alert.alert("성공", msg);
         } else { 
             const msg = "사진 용량이 너무 큽니다.";
-            Platform.OS === 'web' ? window.alert(msg) : Alert.alert("실패", msg);
+            if (Platform.OS === 'web') window.alert(msg); else Alert.alert("실패", msg);
         }
     } catch (e) { console.error(e); }
   };

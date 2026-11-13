@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, Image, TouchableOpacity, 
-  SafeAreaView, Platform, ScrollView, Alert, TextInput, Modal, FlatList 
+  SafeAreaView, Platform, ScrollView, Alert, TextInput, Modal 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker'; 
 import { useNavigation } from '@react-navigation/native';
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 🚨 [수정됨] 현재 랜드마크 표시 */}
+          {/* [수정됨] 현재 랜드마크 표시 */}
           <Text style={styles.statusText}>
             {userInfo?.currentLandmark ? `${userInfo.currentLandmark} 여행 중...` : "여행 준비 중..."}
           </Text>

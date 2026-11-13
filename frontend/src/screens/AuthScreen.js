@@ -7,7 +7,7 @@ import {
 import { setItem } from '../utils/authStorage';
 import { API_URL } from '../constants/constants';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const AuthScreen = ({ onLoginSuccess }) => {
   const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'findId', 'findPw', 'resetPw'
@@ -39,7 +39,7 @@ const AuthScreen = ({ onLoginSuccess }) => {
   const [resetPwData, setResetPwData] = useState({ code: '', newPassword: '', confirmNewPassword: '' });
   const [resetPwMatch, setResetPwMatch] = useState(null);
   const [resetPwError, setResetPwError] = useState(''); 
-  // ✅ [추가] 비밀번호 재설정 성공 팝업 상태
+  // 비밀번호 재설정 성공 팝업 상태
   const [resetSuccessVisible, setResetSuccessVisible] = useState(false);
 
   // 비밀번호 일치 확인 (회원가입용)
@@ -339,7 +339,7 @@ const AuthScreen = ({ onLoginSuccess }) => {
         }
 
         if (json.success) {
-            // ✅ [수정] Alert 대신 성공 팝업 띄우기
+            // Alert 대신 성공 팝업 띄우기
             setResetSuccessVisible(true);
         } else {
             setResetPwError(json.message);
@@ -529,7 +529,7 @@ const AuthScreen = ({ onLoginSuccess }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>{findIdData.nickname}님의 아이디는</Text>
-            <Text style={styles.modalIdText}>'{findIdResult.username}'</Text>
+            <Text style={styles.modalIdText}>{`'${findIdResult.username}'`}</Text>
             <Text style={styles.modalText}>입니다.</Text>
             <TouchableOpacity 
               style={[styles.primaryButton, {marginTop: 20, width: '100%'}]} 
@@ -636,7 +636,7 @@ const AuthScreen = ({ onLoginSuccess }) => {
         </TouchableOpacity>
       </View>
 
-      {/* ✅ [추가] 비밀번호 재설정 성공 팝업 */}
+      {/* 비밀번호 재설정 성공 팝업 */}
       <Modal
         animationType="fade" transparent={true} visible={resetSuccessVisible}
         onRequestClose={() => setResetSuccessVisible(false)}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TextInput, TouchableOpacity, 
-  FlatList, SafeAreaView, Platform, Image, Keyboard, ActivityIndicator, Modal, Dimensions 
+  FlatList, SafeAreaView, Image, Keyboard, ActivityIndicator, Modal, Dimensions 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -11,9 +11,8 @@ import { API_URL } from '../constants/constants';
 const ITEMS_PER_PAGE = 3; 
 const { width } = Dimensions.get('window');
 
-// ✅ 랜드마크 이미지 매핑
+// 랜드마크 이미지 매핑
 const landmarkImages = {
-  // 여기도 경로(../..)를 수정하고, 'Osaca' 오타를 'Osaka'로 고쳐야 합니다.
   "Busan": require('../../assets/images/Busan.png'),
   "Osaka": require('../../assets/images/Osaka.png'), 
   "Paris": require('../../assets/images/Paris.png'),
@@ -170,7 +169,7 @@ export default function LandmarkScreen() {
     const current = userSteps;
     const remaining = Math.max(0, required - current);
     
-    // ✅ 퍼센트 계산 (0으로 나누기 방지)
+    // 퍼센트 계산 (0으로 나누기 방지)
     let percent = 0;
     if (required === 0) {
         percent = 100; // 필요 걸음이 0이면 이미 100%

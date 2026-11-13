@@ -11,7 +11,6 @@ export default function AchievementScreen() {
   const navigation = useNavigation();
   
   const [achievements, setAchievements] = useState([]);
-  const [myTotalSteps, setMyTotalSteps] = useState(0);
   const [loading, setLoading] = useState(true);
   
   const [popupVisible, setPopupVisible] = useState(false);
@@ -27,12 +26,6 @@ export default function AchievementScreen() {
       if (!token) return;
 
       const headers = { Authorization: `Bearer ${token}` };
-
-      const userRes = await fetch(`${API_URL}/api/user/info`, { headers });
-      const userJson = await userRes.json();
-      if (userJson.success) {
-        setMyTotalSteps(userJson.data.totalSteps);
-      }
 
       const achRes = await fetch(`${API_URL}/api/achievements/list`, { headers });
       const achJson = await achRes.json();

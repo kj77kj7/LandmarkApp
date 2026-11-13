@@ -134,7 +134,7 @@ src/screens/
 
 ## 백엔드 연동 API
 
-백엔드는 별도 레포에서 관리하며, 기본 주소는 `http://localhost:8080`입니다.  
+백엔드는 이 저장소의 [`backend/`](../backend) 폴더에 있으며, 기본 주소는 `http://localhost:8080`입니다.  
 (실기기에서는 Expo가 자동으로 개발 PC의 로컬 IP를 감지해 연결합니다.)
 
 | 메서드 | 경로 | 설명 |
@@ -144,7 +144,7 @@ src/screens/
 | GET | `/api/user/info` | 내 정보 (프로필 이미지 포함) |
 | GET | `/api/landmarks` | 랜드마크 목록 |
 | GET | `/api/achievements/list` | 업적 목록 |
-| GET | `/api/ranking` | 주간 랭킹 |
+| GET | `/api/ranking/weekly` | 주간 랭킹 |
 | GET | `/api/notifications` | 알림 목록 (페이지네이션) |
 | GET | `/api/notifications/unread-count` | 읽지 않은 알림 수 |
 | DELETE | `/api/notifications/:id` | 알림 삭제 |

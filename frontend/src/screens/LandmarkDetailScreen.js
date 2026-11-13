@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, Image, TouchableOpacity, 
-  SafeAreaView, Platform, Dimensions, ActivityIndicator 
+  SafeAreaView, ActivityIndicator 
 } from 'react-native';
 import { getItem } from '../utils/authStorage'; 
 import { API_URL } from '../constants/constants';
 
-const { width } = Dimensions.get('window');
 
-// ✅ 랜드마크 이미지 매핑
+// 랜드마크 이미지 매핑
 const landmarkImages = {
-  // 여기도 경로(../..)를 수정하고, 'Osaca' 오타를 'Osaka'로 고쳐야 합니다.
   "Busan": require('../../assets/images/Busan.png'),
   "Osaka": require('../../assets/images/Osaka.png'), 
   "Paris": require('../../assets/images/Paris.png'),
@@ -21,7 +19,7 @@ const landmarkImages = {
   "Australia": require('../../assets/images/Australia.png')
 };
 
-// ✅ 랜드마크 설명 매핑
+// 랜드마크 설명 매핑
 const landmarkDescriptions = {
   "해운대": "한국 부산을 대표하는 가장 유명한 해변으로, 사계절 내내 여행객이 찾는 휴양 명소예요.",
   "오사카성": "일본 오사카의 상징적인 성으로, 벚꽃 시즌에 가장 아름다운 풍경을 보여줘요.",
@@ -149,29 +147,29 @@ export default function LandmarkDetailScreen({ route, navigation }) {
             <Text style={styles.stepLabel}> 걸음</Text>
           </View>
           
-          {/* 🚨 [이동됨] 남은 걸음 수 메시지는 아래 프로그레스 바 섹션으로 이동 */}
+          {/* [이동됨] 남은 걸음 수 메시지는 아래 프로그레스 바 섹션으로 이동 */}
 
           <Text style={styles.descriptionText}>
             {descriptionText}
           </Text>
         </View>
 
-        {/* ✅ 프로그레스 바 & 달리는 사람 아이콘 */}
+        {/* 프로그레스 바 & 달리는 사람 아이콘 */}
         <View style={styles.progressWrapper}>
-            {/* ✅ [이동] 남은 걸음 수 메시지 */}
+            {/* 남은 걸음 수 메시지 */}
             <Text style={styles.remainTextAbove}>{message}</Text>
 
             {/* 바 영역 컨테이너 (아이콘과 바를 묶음) */}
             <View style={styles.barContainer}>
                 {/* 달리는 사람 아이콘 */}
                 <View style={[styles.runnerContainer, { left: `${currentProgress}%` }]}>
-                    {/* ✅ [수정] 아이콘 좌우 반전 (transform scaleX: -1) */}
+                    {/* 아이콘 좌우 반전 (transform scaleX: -1) */}
                     <Text style={{fontSize: 24, transform: [{ scaleX: -1 }]}}>🏃</Text>
                 </View>
 
                 <View style={styles.progressBarBackground}>
                     <View style={[styles.progressBarFill, { width: `${currentProgress}%` }]} />
-                    {/* ✅ [수정] 퍼센트 텍스트 중앙 배치 */}
+                    {/* 퍼센트 텍스트 중앙 배치 */}
                     <View style={styles.percentTextContainer}>
                         <Text style={styles.progressTextCenter}>{currentProgress}%</Text>
                     </View>
@@ -219,7 +217,7 @@ const styles = StyleSheet.create({
     width: '100%'
   },
 
-  // ✅ 프로그레스 바 영역 스타일
+  // 프로그레스 바 영역 스타일
   progressWrapper: { 
       width: '100%', marginTop: 'auto', marginBottom: 40, 
   },

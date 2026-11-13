@@ -12,7 +12,7 @@ export default function FriendProfileScreen() {
   const route = useRoute();
   const { friend } = route.params; 
 
-  // ✅ [수정] 친구 삭제 로직 (메시지 문구 반영 및 웹 호환성 추가)
+  // 친구 삭제 로직 (메시지 문구 반영 및 웹 호환성 추가)
   const handleDeleteFriend = async () => {
     const confirmMessage = `${friend.friendNickname}님을 친구 목록에서 삭제하시겠습니까?`;
     
@@ -58,12 +58,12 @@ export default function FriendProfileScreen() {
             }
         } else { 
             const failMessage = json.message || "삭제 실패";
-            Platform.OS === 'web' ? window.alert(failMessage) : Alert.alert("실패", failMessage);
+            if (Platform.OS === 'web') window.alert(failMessage); else Alert.alert("실패", failMessage);
         }
     } catch (e) { 
         console.error(e);
         const errMsg = "서버 통신 오류";
-        Platform.OS === 'web' ? window.alert(errMsg) : Alert.alert("오류", errMsg);
+        if (Platform.OS === 'web') window.alert(errMsg); else Alert.alert("오류", errMsg);
     }
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, Text, View, FlatList, TouchableOpacity, Platform 
+  StyleSheet, Text, View, FlatList, TouchableOpacity 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getItem } from '../utils/authStorage';
@@ -55,8 +55,6 @@ export default function RankingScreen() {
       }
     } catch (error) {
       console.error('랭킹 로드 실패', error);
-      // 🚨 [수정] 가짜 데이터(Mock Data) 삭제함
-      // 에러 나면 빈 화면이나 에러 메시지 표시
     } finally {
         setLoading(false);
     }
